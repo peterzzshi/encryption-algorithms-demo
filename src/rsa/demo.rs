@@ -9,24 +9,58 @@ pub fn run_rsa_demo(message: &str, key_size: usize) {
     println!("Message: \"{}\"", message);
     println!("Key Size: {} bits", key_size);
 
+    // Validate inputs
+    if key_size < 64 {
+        eprintln!("❌ Error: Key size must be at least 64 bits");
+        return;
+    }
+
+    if message.is_empty() {
+        eprintln!("❌ Error: Message cannot be empty");
+        return;
+    }
+
+    // Check if message is too large for the key size
+    let message_int = string_to_bigint(message);
+    let max_bits = key_size - 11; // PKCS#1 padding requires at least 11 bytes overhead
+
+    if message_int.bits() as usize > max_bits {
+        eprintln!("❌ Error: Message too large for key size. Message requires {} bits, but maximum for {}-bit key is {} bits",
+                 message_int.bits(), key_size, max_bits);
+        eprintln!("💡 Tip: Use a larger key size or shorter message");
+        return;
+    }
+
     // Generate key pair
+    println!("\n⏳ Generating RSA key pair...");
     let p = generate_prime(key_size / 2);
     let q = generate_prime(key_size / 2);
     let n = &p * &q;
     let phi_n = (&p - BigUint::one()) * (&q - BigUint::one());
     let e = BigUint::from(65537u32);
-    let d = mod_inverse(&e, &phi_n).expect("Failed to compute modular inverse");
+
+    let d = match mod_inverse(&e, &phi_n) {
+        Some(d) => d,
+        None => {
+            eprintln!("❌ Error: Failed to compute modular inverse. This is rare - try again.");
+            return;
+        }
+    };
 
     let key_pair = RsaKeyPair {
         public_key: RsaPublicKey { n: n.clone(), e },
         private_key: RsaPrivateKey { n, d },
     };
 
+    // Ensure message is smaller than modulus
+    if message_int >= key_pair.public_key.n {
+        eprintln!("❌ Error: Message integer representation is too large for the modulus");
+        eprintln!("💡 Tip: Use a larger key size");
+        return;
+    }
+
     // Print key generation steps
     print_key_generation_steps(&key_pair, &p, &q, &phi_n);
-
-    // Convert message to integer
-    let message_int = string_to_bigint(message);
 
     // Encrypt
     let ciphertext = encrypt(&message_int, &key_pair.public_key);
@@ -46,5 +80,7 @@ pub fn run_rsa_demo(message: &str, key_size: usize) {
         println!("\n✅ RSA encryption/decryption successful!");
     } else {
         println!("\n❌ RSA encryption/decryption failed!");
+        println!("Original: {:?}", message.as_bytes());
+        println!("Decrypted: {:?}", decrypted_message.as_bytes());
     }
 }

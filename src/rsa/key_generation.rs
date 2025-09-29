@@ -34,14 +34,30 @@ pub fn generate_keypair(key_size: usize) -> RsaKeyPair {
     }
 }
 
+fn truncate_large_number(num: &BigUint, max_digits: usize) -> String {
+    let num_str = num.to_string();
+    if num_str.len() <= max_digits {
+        num_str
+    } else {
+        format!("{}...{} ({} digits)",
+                &num_str[..10],
+                &num_str[num_str.len()-10..],
+                num_str.len())
+    }
+}
+
 pub fn print_key_generation_steps(key_pair: &RsaKeyPair, p: &BigUint, q: &BigUint, phi_n: &BigUint) {
     print_header("RSA Key Generation");
-    print_step("Step 1 - Generate prime p", &p.to_string());
-    print_step("Step 2 - Generate prime q", &q.to_string());
-    print_step("Step 3 - Calculate n = p × q", &key_pair.public_key.n.to_string());
-    print_step("Step 4 - Calculate φ(n) = (p-1) × (q-1)", &phi_n.to_string());
+    print_step("Step 1 - Generate prime p", &truncate_large_number(p, 50));
+    print_step("Step 2 - Generate prime q", &truncate_large_number(q, 50));
+    print_step("Step 3 - Calculate n = p × q", &truncate_large_number(&key_pair.public_key.n, 50));
+    print_step("Step 4 - Calculate φ(n) = (p-1) × (q-1)", &truncate_large_number(phi_n, 50));
     print_step("Step 5 - Choose e (commonly 65537)", &key_pair.public_key.e.to_string());
-    print_step("Step 6 - Calculate d = e⁻¹ mod φ(n)", &key_pair.private_key.d.to_string());
-    print_step("Public Key (n, e)", &format!("({}, {})", key_pair.public_key.n, key_pair.public_key.e));
-    print_step("Private Key (n, d)", &format!("({}, {})", key_pair.private_key.n, key_pair.private_key.d));
+    print_step("Step 6 - Calculate d = e⁻¹ mod φ(n)", &truncate_large_number(&key_pair.private_key.d, 50));
+    print_step("Public Key (n, e)", &format!("({}, {})",
+              truncate_large_number(&key_pair.public_key.n, 30),
+              key_pair.public_key.e));
+    print_step("Private Key (n, d)", &format!("({}, {})",
+              truncate_large_number(&key_pair.private_key.n, 30),
+              truncate_large_number(&key_pair.private_key.d, 30)));
 }
