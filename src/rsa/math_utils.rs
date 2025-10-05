@@ -1,14 +1,6 @@
 use num_bigint::{BigUint, BigInt};
 use num_traits::{Zero, One, Signed};
-use rand::{rng, RngCore};
-
-pub fn gcd(a: &BigUint, b: &BigUint) -> BigUint {
-    if b.is_zero() {
-        a.clone()
-    } else {
-        gcd(b, &(a % b))
-    }
-}
+use rand::RngCore;
 
 pub fn extended_gcd(a: &BigInt, b: &BigInt) -> (BigInt, BigInt, BigInt) {
     if b.is_zero() {
@@ -80,8 +72,8 @@ pub fn miller_rabin_test(n: &BigUint, k: usize) -> bool {
         r += 1;
     }
 
-    let mut rng = rng();
-    
+    let mut rng = rand::rng();
+
     // Perform k rounds of testing
     for _ in 0..k {
         // Generate random a in range [2, n-2]
@@ -120,38 +112,6 @@ pub fn miller_rabin_test(n: &BigUint, k: usize) -> bool {
 
 pub fn is_prime(n: &BigUint) -> bool {
     miller_rabin_test(n, 10) // 10 rounds gives very high confidence
-}
-
-pub fn generate_prime(bits: usize) -> BigUint {
-    let mut rng = rng();
-    loop {
-        // Generate random bytes for the specified bit length
-        let byte_count = (bits + 7) / 8; // Round up to nearest byte
-        let mut bytes = vec![0u8; byte_count];
-        rng.fill_bytes(&mut bytes);
-
-        // Ensure the number has the correct bit length
-        if bits % 8 != 0 {
-            let excess_bits = 8 - (bits % 8);
-            bytes[0] >>= excess_bits;
-        }
-
-        // Set the most significant bit to ensure correct bit length
-        if !bytes.is_empty() && bits > 0 {
-            bytes[0] |= 1 << ((bits - 1) % 8);
-        }
-
-        // Ensure the number is odd (except for 2)
-        if byte_count > 0 && bits > 1 {
-            bytes[byte_count - 1] |= 1;
-        }
-
-        let candidate = BigUint::from_bytes_be(&bytes);
-
-        if is_prime(&candidate) {
-            return candidate;
-        }
-    }
 }
 
 pub fn print_step(step: &str, value: &str) {

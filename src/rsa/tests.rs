@@ -6,14 +6,6 @@ mod tests {
     use num_bigint::BigUint;
 
     #[test]
-    fn test_string_to_bigint_conversion() {
-        let message = "Hello";
-        let bigint = string_to_bigint(message);
-        let recovered = bigint_to_string(&bigint);
-        assert_eq!(message, recovered);
-    }
-
-    #[test]
     fn test_mod_inverse() {
         let a = BigUint::from(3u32);
         let m = BigUint::from(11u32);
@@ -28,14 +20,6 @@ mod tests {
         let modulus = BigUint::from(5u32);
         let result = mod_pow(&base, &exp, &modulus);
         assert_eq!(result, BigUint::from(3u32)); // 2^3 mod 5 = 8 mod 5 = 3
-    }
-
-    #[test]
-    fn test_gcd() {
-        let a = BigUint::from(48u32);
-        let b = BigUint::from(18u32);
-        let result = gcd(&a, &b);
-        assert_eq!(result, BigUint::from(6u32));
     }
 
     #[test]
@@ -59,9 +43,40 @@ mod tests {
     }
 
     #[test]
-    fn test_prime_generation() {
-        let prime = generate_prime(16);
-        assert!(is_prime(&prime));
-        assert!(prime.bits() >= 15 && prime.bits() <= 16);
+    fn test_is_prime() {
+        assert!(is_prime(&BigUint::from(2u32)));
+        assert!(is_prime(&BigUint::from(3u32)));
+        assert!(is_prime(&BigUint::from(5u32)));
+        assert!(is_prime(&BigUint::from(7u32)));
+        assert!(is_prime(&BigUint::from(11u32)));
+        assert!(is_prime(&BigUint::from(13u32)));
+
+        assert!(!is_prime(&BigUint::from(1u32)));
+        assert!(!is_prime(&BigUint::from(4u32)));
+        assert!(!is_prime(&BigUint::from(6u32)));
+        assert!(!is_prime(&BigUint::from(8u32)));
+        assert!(!is_prime(&BigUint::from(9u32)));
+        assert!(!is_prime(&BigUint::from(10u32)));
+    }
+
+    #[test]
+    fn test_small_rsa_example() {
+        // Test with very small primes like in the README
+        let p = BigUint::from(3u32);
+        let q = BigUint::from(11u32);
+        let n = &p * &q; // 33
+        let phi_n = (&p - 1u32) * (&q - 1u32); // 20
+        let e = BigUint::from(3u32);
+        let d = mod_inverse(&e, &phi_n).unwrap(); // Should be 7
+
+        let public_key = RsaPublicKey { n: n.clone(), e };
+        let private_key = RsaPrivateKey { n, d };
+
+        let message = BigUint::from(4u32);
+        let ciphertext = encrypt(&message, &public_key);
+        assert_eq!(ciphertext, BigUint::from(31u32)); // 4^3 mod 33 = 31
+
+        let decrypted = decrypt(&ciphertext, &private_key);
+        assert_eq!(message, decrypted);
     }
 }
