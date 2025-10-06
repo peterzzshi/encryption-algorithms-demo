@@ -46,7 +46,6 @@ pub fn mod_pow(base: u64, exp: u64, modulus: u64) -> u64 {
 }
 
 pub fn is_prime(n: u64) -> bool {
-    // Handle small cases
     if n <= 1 {
         return false;
     }
@@ -57,7 +56,6 @@ pub fn is_prime(n: u64) -> bool {
         return false;
     }
 
-    // Trial division - check divisibility up to sqrt(n)
     let mut i = 3u64;
     let sqrt_n = (n as f64).sqrt() as u64;
 
@@ -65,7 +63,7 @@ pub fn is_prime(n: u64) -> bool {
         if n % i == 0 {
             return false;
         }
-        i += 2; // Only check odd numbers
+        i += 2;
     }
 
     true

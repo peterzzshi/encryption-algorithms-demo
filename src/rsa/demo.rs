@@ -6,6 +6,36 @@ use crate::rsa::math_utils::*;
 // Pure Functions (no side effects)
 // ============================================================================
 
+/// Input type for RSA - everything must eventually become a number
+enum MessageInput {
+    Number(u64),
+    Text(String),
+}
+
+impl MessageInput {
+    /// Convert any input to a number (core requirement for RSA)
+    fn to_number(&self) -> Result<u64, String> {
+        match self {
+            MessageInput::Number(n) => Ok(*n),
+            MessageInput::Text(text) => {
+                text_to_number(text)
+                    .ok_or_else(|| "Text is too long or empty. Maximum 8 characters.".to_string())
+            }
+        }
+    }
+
+    fn is_text(&self) -> bool {
+        matches!(self, MessageInput::Text(_))
+    }
+
+    fn as_text(&self) -> Option<&str> {
+        match self {
+            MessageInput::Text(text) => Some(text),
+            _ => None,
+        }
+    }
+}
+
 /// Validates prime numbers
 fn validate_primes(p: u64, q: u64) -> Result<(), String> {
     if !is_prime(p) || !is_prime(q) {
@@ -50,9 +80,10 @@ fn validate_message_size(message: u64, n: u64) -> Result<(), String> {
     }
 }
 
-/// Performs encryption and decryption, returning results
-fn encrypt_decrypt_cycle(message: u64, key_pair: &RsaKeyPair) -> (u64, u64) {
-    let ciphertext = encrypt(message, &key_pair.public_key);
+/// Core RSA operation: encrypt then decrypt
+/// This is where the actual mathematical work happens
+fn encrypt_decrypt_cycle(message_number: u64, key_pair: &RsaKeyPair) -> (u64, u64) {
+    let ciphertext = encrypt(message_number, &key_pair.public_key);
     let decrypted = decrypt(ciphertext, &key_pair.private_key);
     (ciphertext, decrypted)
 }
@@ -66,19 +97,21 @@ fn print_error(error: &str) {
     eprintln!("💡 Tip: Good small primes: 3, 5, 7, 11, 13, 17, 19, 23, 29, 31");
 }
 
-fn print_demo_header(message: u64, p: u64, q: u64) {
-    println!("🔐 RSA Encryption Algorithm Demo");
-    println!("Message (m): {}", message);
+fn print_demo_header(input: &MessageInput, message_number: u64, p: u64, q: u64) {
+    match input {
+        MessageInput::Number(_) => {
+            println!("🔐 RSA Encryption Algorithm Demo");
+            println!("Message (m): {}", message_number);
+        }
+        MessageInput::Text(text) => {
+            println!("🔐 RSA Text Encryption Demo");
+            println!("Text: \"{}\"", text);
+            println!("Text converted to number: {}", message_number);
+            println!("  (RSA operates on numbers - text must be converted first)");
+        }
+    }
     println!("Prime p: {}", p);
     println!("Prime q: {}", q);
-}
-
-fn print_text_demo_header(text: &str, message: u64, p: u64, q: u64) {
-    println!("🔐 RSA Text Encryption Demo");
-    println!("Text: \"{}\"", text);
-    println!("Prime p: {}", p);
-    println!("Prime q: {}", q);
-    println!("Text as number: {}", message);
 }
 
 fn print_key_generation_steps(key_pair: &RsaKeyPair, p: u64, q: u64, phi_n: u64) {
@@ -96,7 +129,7 @@ fn print_key_generation_steps(key_pair: &RsaKeyPair, p: u64, q: u64, phi_n: u64)
              key_pair.public_key.e,
              key_pair.private_key.d,
              phi_n,
-             (key_pair.public_key.e as u128 * key_pair.private_key.d as u128 % phi_n as u128));
+             key_pair.public_key.e as u128 * key_pair.private_key.d as u128 % phi_n as u128);
 
     print_step("Public Key (n, e)", &format!("({}, {})", key_pair.public_key.n, key_pair.public_key.e));
     print_step("Private Key (n, d)", &format!("({}, {})", key_pair.private_key.n, key_pair.private_key.d));
@@ -104,7 +137,7 @@ fn print_key_generation_steps(key_pair: &RsaKeyPair, p: u64, q: u64, phi_n: u64)
 
 fn print_encryption_steps(message: u64, ciphertext: u64, public_key: &RsaPublicKey) {
     print_header("RSA Encryption");
-    print_step("Message (m)", &message.to_string());
+    print_step("Message as number (m)", &message.to_string());
     print_step("Public key (n)", &public_key.n.to_string());
     print_step("Public key (e)", &public_key.e.to_string());
     print_step("Formula", "c = m^e mod n");
@@ -127,23 +160,28 @@ fn print_decryption_steps(ciphertext: u64, decrypted: u64, private_key: &RsaPriv
     print_step("Formula", "m = c^d mod n");
     println!("  Calculation: m = {}^{} mod {}", ciphertext, private_key.d, private_key.n);
     println!("    (Using modular exponentiation for efficiency)");
-    print_step("Decrypted message (m)", &decrypted.to_string());
+    print_step("Decrypted number (m)", &decrypted.to_string());
 }
 
-fn print_verification(original: u64, decrypted: u64) {
+fn print_verification(input: &MessageInput, original_number: u64, decrypted_number: u64, decrypted_text: Option<&str>) {
     print_header("Verification");
-    print_step("Original message", &original.to_string());
-    print_step("Decrypted message", &decrypted.to_string());
-    print_step("Match", &(original == decrypted).to_string());
-}
 
-fn print_text_verification(original_text: &str, original_num: u64, decrypted_num: u64, decrypted_text: &str) {
-    print_header("Verification");
-    print_step("Original text", original_text);
-    print_step("Original as number", &original_num.to_string());
-    print_step("Decrypted as number", &decrypted_num.to_string());
-    print_step("Decrypted text", decrypted_text);
-    print_step("Match", &(original_text == decrypted_text && original_num == decrypted_num).to_string());
+    if let Some(original_text) = input.as_text() {
+        // Text input case
+        print_step("Original text", original_text);
+        print_step("Original as number", &original_number.to_string());
+        print_step("Decrypted as number", &decrypted_number.to_string());
+        if let Some(dec_text) = decrypted_text {
+            print_step("Decrypted back to text", dec_text);
+        }
+        let match_result = original_text == decrypted_text.unwrap_or("") && original_number == decrypted_number;
+        print_step("Match", &match_result.to_string());
+    } else {
+        // Number input case
+        print_step("Original number", &original_number.to_string());
+        print_step("Decrypted number", &decrypted_number.to_string());
+        print_step("Match", &(original_number == decrypted_number).to_string());
+    }
 }
 
 fn print_result(success: bool) {
@@ -163,99 +201,97 @@ fn print_mathematical_foundation() {
 
 fn print_text_encoding_note() {
     println!();
-    println!("💡 Text Encoding: Each character is converted to its byte value,");
-    println!("   then combined into a single number for encryption.");
+    println!("💡 Text Encoding Explained:");
+    println!("   RSA is a mathematical algorithm that ONLY works with numbers.");
+    println!("   Any text must be converted to a number first:");
+    println!("   1. Each character → byte value (H=72, i=105)");
+    println!("   2. Bytes combined into one number: (72 << 8) | 105 = 18537");
+    println!("   3. RSA encrypts the NUMBER: 18537^e mod n");
+    println!("   4. After decryption, convert the number back to text");
 }
 
 // ============================================================================
-// Main Entry Points (orchestration)
+// Main Entry Point (orchestration) - SINGLE UNIFIED FUNCTION
+// ============================================================================
+
+/// Core RSA demo function that handles ANY input type
+/// This demonstrates that RSA always operates on numbers, regardless of input
+fn run_rsa_demo_internal(input: MessageInput, p: u64, q: u64) {
+    // Step 1: Convert input to number (required for RSA)
+    let message_number = match input.to_number() {
+        Ok(num) => num,
+        Err(error) => {
+            eprintln!("\n❌ Error: {}", error);
+            return;
+        }
+    };
+
+    print_demo_header(&input, message_number, p, q);
+
+    // Step 2: Validate primes
+    if let Err(error) = validate_primes(p, q) {
+        print_error(&error);
+        return;
+    }
+
+    // Step 3: Generate RSA keys
+    println!("\n⏳ Generating RSA key pair...");
+    let key_pair = match generate_keypair(p, q) {
+        Ok(kp) => kp,
+        Err(error) => {
+            print_error(&error);
+            return;
+        }
+    };
+
+    // Step 4: Validate message size
+    if let Err(error) = validate_message_size(message_number, key_pair.public_key.n) {
+        eprintln!("\n❌ Error: {}", error);
+        let tip = if input.is_text() {
+            "💡 Tip: Use larger primes or shorter text"
+        } else {
+            "💡 Tip: Use larger primes or a smaller message"
+        };
+        eprintln!("{}", tip);
+        return;
+    }
+
+    // Step 5: Perform RSA encryption/decryption (THE CORE OPERATION)
+    let phi_n = (p - 1) * (q - 1);
+    let (ciphertext, decrypted_number) = encrypt_decrypt_cycle(message_number, &key_pair);
+
+    // Step 6: If input was text, convert the decrypted number back to text
+    let decrypted_text = input.as_text().map(|text| number_to_text(decrypted_number, text.len()));
+
+    // Step 7: Determine success
+    let success = match (&input, decrypted_text.as_deref()) {
+        (MessageInput::Text(original_text), Some(dec_text)) => {
+            message_number == decrypted_number && original_text == dec_text
+        }
+        _ => message_number == decrypted_number,
+    };
+
+    // Step 8: Print all results
+    print_key_generation_steps(&key_pair, p, q, phi_n);
+    print_encryption_steps(message_number, ciphertext, &key_pair.public_key);
+    print_decryption_steps(ciphertext, decrypted_number, &key_pair.private_key);
+    print_verification(&input, message_number, decrypted_number, decrypted_text.as_deref());
+    print_result(success);
+    print_mathematical_foundation();
+
+    if input.is_text() {
+        print_text_encoding_note();
+    }
+}
+
+// ============================================================================
+// Public API - Simple wrappers
 // ============================================================================
 
 pub fn run_rsa_demo(message: u64, p: u64, q: u64) {
-    print_demo_header(message, p, q);
-
-    // Validate inputs
-    if let Err(error) = validate_primes(p, q) {
-        print_error(&error);
-        return;
-    }
-
-    // Generate key pair
-    println!("\n⏳ Generating RSA key pair...");
-    let key_pair = match generate_keypair(p, q) {
-        Ok(kp) => kp,
-        Err(error) => {
-            print_error(&error);
-            return;
-        }
-    };
-
-    // Validate message size
-    if let Err(error) = validate_message_size(message, key_pair.public_key.n) {
-        eprintln!("\n❌ Error: {}", error);
-        eprintln!("💡 Tip: Use larger primes or a smaller message");
-        return;
-    }
-
-    // Perform encryption/decryption
-    let phi_n = (p - 1) * (q - 1);
-    let (ciphertext, decrypted) = encrypt_decrypt_cycle(message, &key_pair);
-
-    // Print all results
-    print_key_generation_steps(&key_pair, p, q, phi_n);
-    print_encryption_steps(message, ciphertext, &key_pair.public_key);
-    print_decryption_steps(ciphertext, decrypted, &key_pair.private_key);
-    print_verification(message, decrypted);
-    print_result(message == decrypted);
-    print_mathematical_foundation();
+    run_rsa_demo_internal(MessageInput::Number(message), p, q);
 }
 
 pub fn run_rsa_demo_text(text: &str, p: u64, q: u64) {
-    // Convert text to number
-    let message = match text_to_number(text) {
-        Some(num) => num,
-        None => {
-            eprintln!("\n❌ Error: Text is too long or empty. Maximum 8 characters.");
-            return;
-        }
-    };
-
-    print_text_demo_header(text, message, p, q);
-
-    // Validate inputs
-    if let Err(error) = validate_primes(p, q) {
-        print_error(&error);
-        return;
-    }
-
-    // Generate key pair
-    println!("\n⏳ Generating RSA key pair...");
-    let key_pair = match generate_keypair(p, q) {
-        Ok(kp) => kp,
-        Err(error) => {
-            print_error(&error);
-            return;
-        }
-    };
-
-    // Validate message size
-    if let Err(error) = validate_message_size(message, key_pair.public_key.n) {
-        eprintln!("\n❌ Error: {}", error);
-        eprintln!("💡 Tip: Use larger primes or shorter text");
-        return;
-    }
-
-    // Perform encryption/decryption
-    let phi_n = (p - 1) * (q - 1);
-    let (ciphertext, decrypted) = encrypt_decrypt_cycle(message, &key_pair);
-    let decrypted_text = number_to_text(decrypted, text.len());
-
-    // Print all results
-    print_key_generation_steps(&key_pair, p, q, phi_n);
-    print_encryption_steps(message, ciphertext, &key_pair.public_key);
-    print_decryption_steps(ciphertext, decrypted, &key_pair.private_key);
-    print_text_verification(text, message, decrypted, &decrypted_text);
-    print_result(message == decrypted && text == decrypted_text);
-    print_mathematical_foundation();
-    print_text_encoding_note();
+    run_rsa_demo_internal(MessageInput::Text(text.to_string()), p, q);
 }
