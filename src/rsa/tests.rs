@@ -1,8 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::rsa::encryption::*;
-    use crate::rsa::key_generation::*;
-    use crate::rsa::math_utils::*;
+    use crate::rsa::encryption::{decrypt, encrypt};
+    use crate::rsa::math_utils::{is_prime, mod_inverse, mod_pow};
+    use crate::rsa::text_encoding::{number_to_text, text_to_number};
+    use crate::rsa::types::{RsaPrivateKey, RsaPublicKey};
 
     #[test]
     fn test_mod_inverse() {

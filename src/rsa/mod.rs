@@ -1,6 +1,11 @@
-pub mod key_generation;
-pub mod encryption;
+pub mod types;
+pub mod constants;
 pub mod math_utils;
+pub mod text_encoding;
+pub mod validation;
+pub mod encryption;
+pub mod key_generation;
+pub mod output;
 pub mod demo;
 
 #[cfg(test)]
