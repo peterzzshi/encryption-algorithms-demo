@@ -1,235 +1,154 @@
-# RSA Algorithm
+# RSA Algorithm - Step-by-Step Mathematical Demonstration
 
-RSA (Rivest-Shamir-Adleman) is a public-key cryptographic algorithm that relies on the mathematical difficulty of factoring large composite numbers.
+This document explains the RSA encryption algorithm through concrete examples, showing the exact calculations at each step.
 
-## Mathematical Foundation
+## Core Concept
 
-### 1. Key Generation
+RSA is a public-key cryptographic algorithm where:
+- **Anyone can encrypt** using the public key `(n, e)`
+- **Only you can decrypt** using the private key `(n, d)`
+- Security relies on the difficulty of factoring large numbers
 
-Given two distinct prime numbers `p` and `q`:
+## The RSA Process
+
+### Step 1: Key Generation
+
+Given two prime numbers `p` and `q`:
 
 1. **Calculate modulus**: `n = p × q`
-2. **Calculate Euler's totient function**: `φ(n) = (p-1) × (q-1)`
-3. **Choose public exponent**: Select `e` such that `1 < e < φ(n)` and `gcd(e, φ(n)) = 1`
-4. **Calculate private exponent**: Find `d` such that `e × d ≡ 1 (mod φ(n))`
-   - This is computed using the Extended Euclidean Algorithm
-   - Equivalently: `d = e^(-1) mod φ(n)`
+2. **Calculate Euler's totient**: `φ(n) = (p-1) × (q-1)`
+3. **Choose public exponent**: Pick `e` where `gcd(e, φ(n)) = 1`
+4. **Calculate private exponent**: Find `d` where `e × d ≡ 1 (mod φ(n))`
 
 **Result:**
-- Public Key: `(n, e)`
-- Private Key: `(n, d)`
+- Public Key: `(n, e)` - shared with everyone
+- Private Key: `(n, d)` - kept secret
 
-### 2. Encryption
+### Step 2: Encryption
 
-To encrypt a message `m` where `0 ≤ m < n`:
-
+To encrypt message `m`:
 ```
 c = m^e mod n
 ```
 
-Where:
-- `m` is the plaintext message (as an integer)
-- `c` is the ciphertext
-- `e` and `n` are from the public key
+### Step 3: Decryption
 
-### 3. Decryption
-
-To decrypt a ciphertext `c`:
-
+To decrypt ciphertext `c`:
 ```
 m = c^d mod n
 ```
 
-Where:
-- `c` is the ciphertext
-- `m` is the recovered plaintext
-- `d` and `n` are from the private key
+---
 
-### 4. Correctness Proof
+## Complete Worked Example: Encrypting "4"
 
-The RSA algorithm works because of **Euler's theorem**:
+### 📝 Step 1: Key Generation
 
-If `gcd(m, n) = 1`, then:
+**Given:**
+- `p = 3` (first prime)
+- `q = 11` (second prime)
+
+**Calculate modulus n:**
 ```
-m^φ(n) ≡ 1 (mod n)
-```
-
-Since `e × d ≡ 1 (mod φ(n))`, we can write:
-```
-e × d = k × φ(n) + 1
+n = p × q = 3 × 11 = 33
 ```
 
-for some integer `k`.
-
-Therefore:
+**Calculate Euler's totient φ(n):**
 ```
-c^d = (m^e)^d = m^(e×d) = m^(k×φ(n)+1) = (m^φ(n))^k × m ≡ 1^k × m = m (mod n)
+φ(n) = (p-1) × (q-1) = (3-1) × (11-1) = 2 × 10 = 20
 ```
 
-This proves that decryption recovers the original message.
+**Choose public exponent e:**
 
-## Worked Example with Small Numbers
+We need find `e`, such that `gcd(e, φ(n)) = gcd(e, 20) = 1`; `e = 3` suffices.
 
-### Step 1: Key Generation
+**Calculate private exponent d:**
 
-1. **Choose primes**: `p = 3`, `q = 11`
-2. **Calculate modulus**: `n = 3 × 11 = 33`
-3. **Calculate Euler's totient**: `φ(n) = (3-1) × (11-1) = 2 × 10 = 20`
-4. **Choose public exponent**: `e = 3` (since `gcd(3, 20) = 1`)
-5. **Calculate private exponent**: Find `d` such that `3 × d ≡ 1 (mod 20)`
-   - We need to solve: `3d = 20k + 1` for integers `d` and `k`
-   - Using the Extended Euclidean Algorithm or by inspection:
-   - Testing: `3 × 7 = 21 = 20 × 1 + 1 ≡ 1 (mod 20)`
-   - Therefore `d = 7`
+Find `d` where `3 × d ≡ 1 (mod 20)` => `3d = 20k + 1` for some integer `k`, by testing all values up to `φ(n) - 1 = 19`.
 
-**Keys:**
-- Public Key: `(n=33, e=3)`
-- Private Key: `(n=33, d=7)`
+**Try all values systematically:**
 
-### Step 2: Encryption
+- `d = 1`: `3 × 1 mod 20 = 3` ✗
+- `d = 2`: `3 × 2 mod 20 = 6` ✗
+- `d = 3`: `3 × 3 mod 20 = 9` ✗
+- `d = 4`: `3 × 4 mod 20 = 12` ✗
+- `d = 5`: `3 × 5 mod 20 = 15` ✗
+- `d = 6`: `3 × 6 mod 20 = 18` ✗
+- `d = 7`: `3 × 7 mod 20 = 1` ✓
 
-Encrypt message `m = 4`:
+**Verify:** `(3 × 7) mod 20 = 21 mod 20 = 1` ✓
+
+**Keys Generated:**
+- 🔓 Public Key: `(n=33, e=3)`
+- 🔐 Private Key: `(n=33, d=7)`
+
+---
+
+### 🔒 Step 2: Encryption
+
+- **Message:** `m = 4`
+- **Formula:** `c = m^e mod n = 4^3 mod 33`
+- **Ciphertext:** `c = 4^3 mod 33 = 31`
+
+---
+
+### 🔓 Step 3: Decryption
+
+**Ciphertext:** `c = 31`
+
+**Formula:** `m = c^d mod n = 31^7 mod 33`
+
+**Decrypted message:** `m = 31^7 mod 33 = 27,512,614,111 mod 33 = 4` ✓
+
+---
+
+## Mathematical Proof
+
+**Euler's Theorem states:**
+If `gcd(m, n) = 1`, then `m^φ(n) ≡ 1 (mod n)`
+
+**In our case:**
+- We chose `d` such that `e × d ≡ 1 (mod φ(n))`
+- This means `e × d = k × φ(n) + 1` for some integer `k`
+
+**The proof:**
 ```
-c = m^e mod n = 4^3 mod 33
+c^d = (m^e)^d           [by definition of c]
+    = m^(e×d)           [power rule]
+    = m^(k×φ(n) + 1)    [substituting e×d]
+    = m^(k×φ(n)) × m    [exponent rule]
+    = (m^φ(n))^k × m    [power rule]
+    ≡ 1^k × m           [by Euler's theorem]
+    = m (mod n)         [proven!]
 ```
 
-Calculation:
-- `4^3 = 64`
-- `64 = 1 × 33 + 31`
-- Therefore `c = 31`
-
-### Step 3: Decryption
-
-Decrypt ciphertext `c = 31`:
+**Verify with our example:**
 ```
-m = c^d mod n = 31^7 mod 33
+e × d = 3 × 7 = 21 = 1 × 20 + 1 = 1 × φ(n) + 1
+k = 1
+
+31^7 = 4^(3×7) = 4^21 = 4^(20+1) = 4^20 × 4 ≡ 1 × 4 = 4 (mod 33)
 ```
 
-Using modular exponentiation with **binary method** (since 7 = 4 + 2 + 1 = 2² + 2¹ + 2⁰):
+## Key Insights
 
-**Step 3.1: Build powers of 31 (mod 33)**
-- `31^1 = 31 mod 33 = 31`
-- `31^2 = 961 mod 33 = 4` (since `961 = 29 × 33 + 4`)
-- `31^4 = (31^2)^2 = 4^2 mod 33 = 16`
+RSA's security relies on a fundamental asymmetry: multiplying primes is instant (`3 × 11 = 33`), but factoring the product back is extremely hard.
 
-**Step 3.2: Combine using binary representation**
-- `31^7 = 31^4 × 31^2 × 31^1`
-- `= 16 × 4 × 31 (mod 33)`
+Our example uses small primes (3, 11) for demonstration purposes. In real-world applications, **RSA uses 2048-bit primes or larger** (617+ digit numbers), making it computationally infeasible to crack with current technology.
 
-**Step 3.3: Calculate step by step**
-- `16 × 4 = 64`
-- `64 mod 33 = 31` (since `64 = 1 × 33 + 31`)
-- `31 × 31 = 961`
-- `961 mod 33 = 4` (since `961 = 29 × 33 + 4`)
-- Therefore `m = 4` ✓
+---
 
-### Verification
+## Try It Yourself
 
-**Method 1: Direct calculation**
-- `31^7 = 27,512,614,111`
-- `27,512,614,111 = 833,715,276 × 33 + 4`
-- Remainder is `4`, confirming our result
+Run the demo program to see these calculations:
 
-**Method 2: Using Euler's theorem**
-- We have `e × d = 3 × 7 = 21 = 1 × 20 + 1 = 1 × φ(n) + 1`
-- Therefore: `c^d = (m^e)^d = m^(e×d) = m^(φ(n)+1) = m^φ(n) × m ≡ 1 × m = m (mod n)`
-- Since `gcd(4, 33) = 1`, Euler's theorem guarantees `4^20 ≡ 1 (mod 33)`
-
-## Running the Demo Program
-
-This repository includes a Rust implementation that demonstrates the RSA algorithm with user-provided parameters.
-
-### Usage
-
-**Number Encryption (for mathematical demonstration):**
 ```bash
-cargo run -- rsa --message <M> -p <P> -q <Q>
-```
-
-**Text Encryption (for practical demonstration):**
-```bash
-cargo run -- rsa-text --text <TEXT> -p <P> -q <Q>
-```
-
-Where:
-- `<M>` is the message as a number
-- `<TEXT>` is a text string (maximum 8 characters)
-- `<P>` is the first prime number
-- `<Q>` is the second prime number
-
-### Examples
-
-**1. Running the worked example from above:**
-```bash
+# Example 1: Encrypt the number 4
 cargo run -- rsa --message 4 -p 3 -q 11
+
+# Example 2: Encrypt text
+cargo run -- rsa --message "Hi" -p 251 -q 241
+
+# Example 3: Larger numbers
+cargo run -- rsa --message 123 -p 61 -q 53
 ```
-
-**2. Slightly larger numbers:**
-```bash
-cargo run -- rsa --message 8 -p 5 -q 7
-```
-
-**3. Text encryption with small message:**
-```bash
-cargo run -- rsa-text --text "Hi" -p 251 -q 241
-```
-
-**4. Text encryption with longer message:**
-```bash
-cargo run -- rsa-text --text "Hello" -p 997 -q 991
-```
-
-**Note:** 
-- For number encryption: message must be smaller than `n = p × q`
-- For text encryption: text is converted to a number, which must also be smaller than `n`
-- Larger primes are needed for text encryption (e.g., 251, 241, 499, 503, 997, 991)
-
-## Text Encoding
-
-### How Text is Converted to Numbers
-
-RSA operates on numbers, so text must be encoded:
-
-1. **Character to Bytes**: Each character is converted to its ASCII/UTF-8 byte value
-   - Example: 'H' = 72, 'i' = 105
-
-2. **Bytes to Number**: Bytes are combined into a single number using bit shifting
-   - "Hi" = (72 << 8) | 105 = 18432 + 105 = 18537
-
-3. **Encryption**: The number is encrypted using RSA
-   - `c = 18537^e mod n`
-
-4. **Decryption**: The number is decrypted
-   - `m = c^d mod n = 18537`
-
-5. **Number to Text**: The number is converted back to text
-   - 18537 → [72, 105] → "Hi"
-
-**Limitations:**
-- Maximum 8 characters (64 bits for u64)
-- Message number must be smaller than modulus `n`
-
-## Security Assumptions
-
-RSA security relies on the computational hardness of:
-
-1. **Integer Factorization Problem**: Given `n = p × q`, it is computationally infeasible to find `p` and `q` for sufficiently large primes (typically 1024+ bits)
-2. **RSA Problem**: Computing the `d`-th root of `c` modulo `n` without knowing the factorization of `n`
-
-### Why RSA is Secure
-
-The security of RSA depends on the fact that:
-- **Public information**: `n` and `e` are publicly known
-- **Computing `d` is hard**: To compute `d = e^(-1) mod φ(n)`, you need to know `φ(n)`
-- **Computing `φ(n)` is hard**: To compute `φ(n) = (p-1)(q-1)`, you need to know `p` and `q`
-- **Factoring `n` is hard**: Finding `p` and `q` given only `n = pq` is computationally infeasible for large primes
-
-**Note:** The small numbers in the examples above are for educational purposes only. Production RSA implementations use primes of at least 1024 bits (preferably 2048 or 4096 bits) to ensure security.
-
-## Implementation Details
-
-This implementation uses:
-- **Native Rust types**: `u64` for prime numbers and messages, `u128` for intermediate calculations
-- **Zero external dependencies** (except `clap` for CLI): No BigInt library needed for educational examples
-- **Pure functions**: Core logic separated from I/O for clarity and testability
-- **Trial division**: Simple primality testing suitable for small educational primes
