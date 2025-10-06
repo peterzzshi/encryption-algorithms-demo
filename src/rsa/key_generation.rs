@@ -1,5 +1,3 @@
-use num_bigint::BigUint;
-
 #[derive(Clone)]
 pub struct RsaKeyPair {
     pub public_key: RsaPublicKey,
@@ -8,12 +6,12 @@ pub struct RsaKeyPair {
 
 #[derive(Clone)]
 pub struct RsaPublicKey {
-    pub n: BigUint,
-    pub e: BigUint,
+    pub n: u64,
+    pub e: u64,
 }
 
 #[derive(Clone)]
 pub struct RsaPrivateKey {
-    pub n: BigUint,
-    pub d: BigUint,
+    pub n: u64,
+    pub d: u64,
 }

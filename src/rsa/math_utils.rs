@@ -1,117 +1,74 @@
-use num_bigint::{BigUint, BigInt};
-use num_traits::{Zero, One, Signed};
-use rand::RngCore;
-
-pub fn extended_gcd(a: &BigInt, b: &BigInt) -> (BigInt, BigInt, BigInt) {
-    if b.is_zero() {
-        (a.clone(), BigInt::one(), BigInt::zero())
+pub fn extended_gcd(a: i128, b: i128) -> (i128, i128, i128) {
+    if b == 0 {
+        (a, 1, 0)
     } else {
-        let (gcd, x1, y1) = extended_gcd(b, &(a % b));
-        let x = y1.clone();
+        let (gcd, x1, y1) = extended_gcd(b, a % b);
+        let x = y1;
         let y = x1 - (a / b) * y1;
         (gcd, x, y)
     }
 }
 
-pub fn mod_inverse(a: &BigUint, m: &BigUint) -> Option<BigUint> {
-    let a_signed = BigInt::from(a.clone());
-    let m_signed = BigInt::from(m.clone());
-    
-    let (gcd, x, _) = extended_gcd(&a_signed, &m_signed);
-    
-    if gcd == BigInt::one() {
-        let result = if x.is_negative() {
-            x + &m_signed
+pub fn mod_inverse(a: u64, m: u64) -> Option<u64> {
+    let (gcd, x, _) = extended_gcd(a as i128, m as i128);
+
+    if gcd == 1 {
+        let result = if x < 0 {
+            x + m as i128
         } else {
             x
         };
-        Some(result.magnitude().clone())
+        Some(result as u64)
     } else {
         None
     }
 }
 
-pub fn mod_pow(base: &BigUint, exp: &BigUint, modulus: &BigUint) -> BigUint {
-    if modulus == &BigUint::one() {
-        return BigUint::zero();
+pub fn mod_pow(base: u64, exp: u64, modulus: u64) -> u64 {
+    if modulus == 1 {
+        return 0;
     }
 
-    let mut result = BigUint::one();
-    let mut base = base % modulus;
-    let mut exp = exp.clone();
+    let mut result: u128 = 1;
+    let mut base: u128 = (base as u128) % (modulus as u128);
+    let mut exp = exp;
+    let modulus = modulus as u128;
 
-    while exp > BigUint::zero() {
-        if &exp % 2u32 == BigUint::one() {
-            result = (result * &base) % modulus;
+    while exp > 0 {
+        if exp % 2 == 1 {
+            result = (result * base) % modulus;
         }
         exp >>= 1;
-        base = (&base * &base) % modulus;
+        base = (base * base) % modulus;
     }
 
-    result
+    result as u64
 }
 
-pub fn miller_rabin_test(n: &BigUint, k: usize) -> bool {
-    if n <= &BigUint::one() {
+pub fn is_prime(n: u64) -> bool {
+    // Handle small cases
+    if n <= 1 {
         return false;
     }
-    if n <= &BigUint::from(3u32) {
+    if n == 2 {
         return true;
     }
-    if n % 2u32 == BigUint::zero() {
+    if n % 2 == 0 {
         return false;
     }
 
-    // Write n-1 as d * 2^r
-    let n_minus_1 = n - BigUint::one();
-    let mut r = 0;
-    let mut d = n_minus_1.clone();
-    
-    while &d % 2u32 == BigUint::zero() {
-        d >>= 1;
-        r += 1;
-    }
+    // Trial division - check divisibility up to sqrt(n)
+    let mut i = 3u64;
+    let sqrt_n = (n as f64).sqrt() as u64;
 
-    let mut rng = rand::rng();
-
-    // Perform k rounds of testing
-    for _ in 0..k {
-        // Generate random a in range [2, n-2]
-        let a = loop {
-            let bytes_len = ((n.bits() + 7) / 8) as usize;
-            let mut bytes = vec![0u8; bytes_len];
-            rng.fill_bytes(&mut bytes);
-            let candidate = BigUint::from_bytes_be(&bytes) % (n - 3u32) + 2u32;
-            if candidate >= BigUint::from(2u32) && candidate <= n - 2u32 {
-                break candidate;
-            }
-        };
-
-        let mut x = mod_pow(&a, &d, n);
-        
-        if x == BigUint::one() || x == n_minus_1 {
-            continue;
-        }
-
-        let mut composite = true;
-        for _ in 0..r-1 {
-            x = mod_pow(&x, &BigUint::from(2u32), n);
-            if x == n_minus_1 {
-                composite = false;
-                break;
-            }
-        }
-
-        if composite {
+    while i <= sqrt_n {
+        if n % i == 0 {
             return false;
         }
+        i += 2; // Only check odd numbers
     }
 
     true
-}
-
-pub fn is_prime(n: &BigUint) -> bool {
-    miller_rabin_test(n, 10) // 10 rounds gives very high confidence
 }
 
 pub fn print_step(step: &str, value: &str) {

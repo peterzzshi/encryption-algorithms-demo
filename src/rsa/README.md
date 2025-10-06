@@ -141,36 +141,73 @@ This repository includes a Rust implementation that demonstrates the RSA algorit
 
 ### Usage
 
+**Number Encryption (for mathematical demonstration):**
 ```bash
 cargo run -- rsa --message <M> -p <P> -q <Q>
 ```
 
+**Text Encryption (for practical demonstration):**
+```bash
+cargo run -- rsa-text --text <TEXT> -p <P> -q <Q>
+```
+
 Where:
 - `<M>` is the message as a number
+- `<TEXT>` is a text string (maximum 8 characters)
 - `<P>` is the first prime number
 - `<Q>` is the second prime number
 
-### Example: Running the worked example above
+### Examples
 
+**1. Running the worked example from above:**
 ```bash
 cargo run -- rsa --message 4 -p 3 -q 11
 ```
 
-This will output all the mathematical steps shown in the worked example above.
-
-### Other Examples
-
-**Example with slightly larger primes:**
+**2. Slightly larger numbers:**
 ```bash
 cargo run -- rsa --message 8 -p 5 -q 7
 ```
 
-**Example with larger primes:**
+**3. Text encryption with small message:**
 ```bash
-cargo run -- rsa --message 42 -p 13 -q 17
+cargo run -- rsa-text --text "Hi" -p 251 -q 241
 ```
 
-**Note:** The message must be smaller than `n = p × q` for the algorithm to work correctly.
+**4. Text encryption with longer message:**
+```bash
+cargo run -- rsa-text --text "Hello" -p 997 -q 991
+```
+
+**Note:** 
+- For number encryption: message must be smaller than `n = p × q`
+- For text encryption: text is converted to a number, which must also be smaller than `n`
+- Larger primes are needed for text encryption (e.g., 251, 241, 499, 503, 997, 991)
+
+## Text Encoding
+
+### How Text is Converted to Numbers
+
+RSA operates on numbers, so text must be encoded:
+
+1. **Character to Bytes**: Each character is converted to its ASCII/UTF-8 byte value
+   - Example: 'H' = 72, 'i' = 105
+
+2. **Bytes to Number**: Bytes are combined into a single number using bit shifting
+   - "Hi" = (72 << 8) | 105 = 18432 + 105 = 18537
+
+3. **Encryption**: The number is encrypted using RSA
+   - `c = 18537^e mod n`
+
+4. **Decryption**: The number is decrypted
+   - `m = c^d mod n = 18537`
+
+5. **Number to Text**: The number is converted back to text
+   - 18537 → [72, 105] → "Hi"
+
+**Limitations:**
+- Maximum 8 characters (64 bits for u64)
+- Message number must be smaller than modulus `n`
 
 ## Security Assumptions
 
@@ -188,3 +225,11 @@ The security of RSA depends on the fact that:
 - **Factoring `n` is hard**: Finding `p` and `q` given only `n = pq` is computationally infeasible for large primes
 
 **Note:** The small numbers in the examples above are for educational purposes only. Production RSA implementations use primes of at least 1024 bits (preferably 2048 or 4096 bits) to ensure security.
+
+## Implementation Details
+
+This implementation uses:
+- **Native Rust types**: `u64` for prime numbers and messages, `u128` for intermediate calculations
+- **Zero external dependencies** (except `clap` for CLI): No BigInt library needed for educational examples
+- **Pure functions**: Core logic separated from I/O for clarity and testability
+- **Trial division**: Simple primality testing suitable for small educational primes
