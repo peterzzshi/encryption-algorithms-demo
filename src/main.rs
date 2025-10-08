@@ -1,5 +1,4 @@
-mod rsa;
-
+use encryption_demo::rsa;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -36,5 +35,8 @@ fn main() {
                 rsa::demo::run_rsa_demo_text(&message, p, q);
             }
         }
+        // Future algorithms handled here:
+        // Algorithm::Sha256 { message } => sha256::demo::run_sha256_demo(&message),
+        // Algorithm::Ecc { message, curve } => ecc::demo::run_ecc_demo(&message, &curve),
     }
 }

@@ -146,9 +146,21 @@ Run the demo program to see these calculations:
 # Example 1: Encrypt the number 4
 cargo run -- rsa --message 4 -p 3 -q 11
 
-# Example 2: Encrypt text
+# Example 2: Encrypt text "Hi"
 cargo run -- rsa --message "Hi" -p 251 -q 241
 
 # Example 3: Larger numbers
 cargo run -- rsa --message 123 -p 61 -q 53
+```
+
+---
+
+## Tests
+
+Unit and integration tests can be found in `/tests/rsa/`:
+
+```bash
+cargo test                                      # Run all tests
+cargo test --test rsa_tests                     # Run RSA tests only
+cargo test rsa::math_utils_tests                # Run specific module tests
 ```

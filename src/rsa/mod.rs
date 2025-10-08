@@ -7,6 +7,3 @@ pub mod encryption;
 pub mod key_generation;
 pub mod output;
 pub mod demo;
-
-#[cfg(test)]
-mod tests;

@@ -5,6 +5,10 @@ edition = "2024"
 description = "Demo for of cryptographic algorithms"
 license = "MIT"
 
+[lib]
+name = "encryption_demo"
+path = "src/lib.rs"
+
 [[bin]]
 name = "encryption-demo"
 path = "src/main.rs"
