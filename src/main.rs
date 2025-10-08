@@ -1,4 +1,4 @@
-use encryption_demo::rsa;
+use encryption_demo::{rsa, sha256};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -21,6 +21,11 @@ enum Algorithm {
         #[arg(short = 'q')]
         q: u64,
     },
+
+    Sha256 {
+        #[arg(short, long)]
+        message: String,
+    },
 }
 
 fn main() {
@@ -35,8 +40,17 @@ fn main() {
                 rsa::demo::run_rsa_demo_text(&message, p, q);
             }
         }
+        Algorithm::Sha256 { message } => {
+            if message.chars().all(|c| c.is_ascii_hexdigit()) && message.len() % 2 == 0 && message.len() > 0 {
+                match hex::decode(&message) {
+                    Ok(bytes) => sha256::demo::run_sha256_demo(bytes),
+                    Err(_) => sha256::demo::run_sha256_demo_text(&message),
+                }
+            } else {
+                sha256::demo::run_sha256_demo_text(&message);
+            }
+        }
         // Future algorithms handled here:
-        // Algorithm::Sha256 { message } => sha256::demo::run_sha256_demo(&message),
         // Algorithm::Ecc { message, curve } => ecc::demo::run_ecc_demo(&message, &curve),
     }
 }
