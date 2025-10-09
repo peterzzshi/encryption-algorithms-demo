@@ -1,11 +1,18 @@
 use super::encryption::{decrypt, encrypt};
 use super::key_generation::generate_keypair;
-use super::output::{print_header, print_keys, print_verification};
 use super::text_encoding::{number_to_text, text_to_number};
 use super::validation::{is_valid_message_size, validate_primes};
 
 fn run_rsa_demo_internal(message_text: Option<&str>, message_number: u64, p: u64, q: u64) {
-    print_header(message_text, message_number, p, q);
+    // Header
+    if let Some(text) = message_text {
+        println!("🔐 RSA Text Encryption Demo");
+        println!("Text: \"{}\" → Number: {}", text, message_number);
+    } else {
+        println!("🔐 RSA Number Encryption Demo");
+        println!("Message: {}", message_number);
+    }
+    println!("Primes: p={}, q={}", p, q);
 
     validate_primes(p, q);
 
@@ -21,23 +28,46 @@ fn run_rsa_demo_internal(message_text: Option<&str>, message_number: u64, p: u64
         return;
     }
 
-    print_keys(&key_pair, p, q);
+    // Print keys
+    println!("\n=== Key Generation ===");
+    let phi_n = (p - 1) * (q - 1);
+    println!("  n = p × q = {} × {} = {}", p, q, key_pair.public_key.n);
+    println!("  φ(n) = (p-1) × (q-1) = {}", phi_n);
+    println!("  Public key:  (n={}, e={})", key_pair.public_key.n, key_pair.public_key.e);
+    println!("  Private key: (n={}, d={})", key_pair.private_key.n, key_pair.private_key.d);
+    let check = key_pair.public_key.e as u128 * key_pair.private_key.d as u128 % phi_n as u128;
+    println!("  Verify: {} × {} ≡ {} (mod {})", key_pair.public_key.e, key_pair.private_key.d, check, phi_n);
 
+    // Encryption
     let ciphertext = encrypt(message_number, &key_pair.public_key);
     println!("\n=== Encryption ===");
     println!("  c = m^e mod n = {}^{} mod {} = {}", message_number, key_pair.public_key.e, key_pair.public_key.n, ciphertext);
 
+    // Decryption
     let decrypted_number = decrypt(ciphertext, &key_pair.private_key);
     println!("\n=== Decryption ===");
     println!("  m = c^d mod n = {}^{} mod {} = {}", ciphertext, key_pair.private_key.d, key_pair.private_key.n, decrypted_number);
 
-    let decrypted_text = message_text.map(|text| number_to_text(decrypted_number, text.len()));
-    print_verification(
-        message_text,
-        message_number,
-        decrypted_number,
-        decrypted_text.as_deref(),
-    );
+    // Verification
+    println!("\n=== Verification ===");
+    let success = if let Some(orig_text) = message_text {
+        let decrypted_text = number_to_text(decrypted_number, orig_text.len());
+        println!("  Original text: {}", orig_text);
+        println!("  Original number: {}", message_number);
+        println!("  Decrypted number: {}", decrypted_number);
+        println!("  Decrypted text: {}", decrypted_text);
+        orig_text == decrypted_text && message_number == decrypted_number
+    } else {
+        println!("  Original: {}", message_number);
+        println!("  Decrypted: {}", decrypted_number);
+        message_number == decrypted_number
+    };
+
+    if success {
+        println!("\n✅ Success! Encryption and decryption worked correctly.");
+    } else {
+        println!("\n❌ Failed! Something went wrong.");
+    }
 }
 
 // ============================================================================

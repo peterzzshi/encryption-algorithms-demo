@@ -5,5 +5,4 @@ pub mod text_encoding;
 pub mod validation;
 pub mod encryption;
 pub mod key_generation;
-pub mod output;
 pub mod demo;
