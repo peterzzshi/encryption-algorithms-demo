@@ -20,6 +20,29 @@ cd encryption-algorithms-demo
 cargo build --release
 ```
 
+### 🌐 Web Demo (Interactive UI)
+
+**Live Demo:** Visit the [GitHub Pages site](https://peterzzshi.github.io/encryption-algorithms-demo/) for the interactive web demo.
+
+#### Local Development
+
+Run the interactive web demo locally with step-by-step visualisations:
+
+```bash
+# Build the WebAssembly module
+wasm-pack build --target web --out-dir web/pkg
+
+# Install dependencies and build TypeScript
+cd web
+npm install
+npm run build
+
+# Start a local server
+python3 -m http.server 8080
+```
+
+Then open http://localhost:8080 in your browser!
+
 ### Running Demos
 
 #### RSA Encryption
@@ -57,9 +80,11 @@ cargo run -- sha256 --message "48656c6c6f"
 
 ```
 encryption-algorithms-demo/
+├── .github/
+│   └── workflows/
+│       └── deploy.yml       # GitHub Pages deployment
 ├── src/
 │   ├── common/              # Shared utilities
-│   │   ├── output.rs        # Hex formatting
 │   │   └── validation.rs    # Input validation
 │   ├── rsa/                 # RSA implementation
 │   │   ├── constants.rs     # Public exponents
@@ -69,7 +94,6 @@ encryption-algorithms-demo/
 │   │   ├── text_encoding.rs
 │   │   ├── types.rs         # RSA types
 │   │   ├── validation.rs    # Prime validation
-│   │   ├── output.rs        # Display formatting
 │   │   ├── demo.rs          # Demo runner
 │   │   └── README.md        # RSA explanation
 │   ├── sha256/              # SHA-256 implementation
@@ -79,15 +103,28 @@ encryption-algorithms-demo/
 │   │   ├── math_utils.rs    # Bitwise operations
 │   │   ├── types.rs         # SHA types
 │   │   ├── validation.rs    # Message validation
-│   │   ├── output.rs        # Display formatting
 │   │   ├── demo.rs          # Demo runner
 │   │   └── README.md        # SHA-256 explanation
+│   ├── wasm/                # WebAssembly bindings
+│   │   └── mod.rs
 │   ├── lib.rs               # Library entry
 │   └── main.rs              # CLI entry
 ├── tests/
-│   ├── common/              # Common utility tests (5 tests)
-│   └── rsa/                 # RSA tests (33 tests)
-└── README.md                # This file
+│   ├── common/              # Common utility tests
+│   └── rsa/                 # RSA tests
+├── web/                     # Web demo (GitHub Pages)
+│   ├── index.html
+│   ├── css/
+│   │   └── styles.css
+│   ├── ts/                  # TypeScript source
+│   │   ├── app.ts           # Application entry
+│   │   ├── demos.ts         # Demo orchestration
+│   │   ├── ui.ts            # UI rendering (pure)
+│   │   ├── utils.ts         # Utilities (pure)
+│   │   └── wasm.ts          # WASM bindings
+│   ├── js/                  # Compiled JavaScript (generated)
+│   └── pkg/                 # WASM package (generated)
+└── README.md
 ```
 
 ## 🏗️ Architecture
@@ -133,6 +170,62 @@ This project follows **functional programming principles**:
 - `constants.rs` - Algorithm parameters (exponents vs K values)
 - `types.rs` - Algorithm-specific types (KeyPair vs Hash)
 - `validation.rs` - Algorithm rules (prime checks vs message format)
+
+### Web Architecture
+
+The web demo follows the same functional programming principles:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  web/ts/                                                │
+├─────────────────────────────────────────────────────────┤
+│  utils.ts   │ Pure: DOM queries, validation, parsing   │
+│  ui.ts      │ Pure: HTML builders, render functions    │
+│  wasm.ts    │ WASM bindings with encapsulated state    │
+│  demos.ts   │ Demo orchestration, input/output flow    │
+│  app.ts     │ Entry point, event listener setup        │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key patterns:**
+- **Immutable interfaces** - All data structures use `readonly` properties
+- **Pure functions** - HTML builders and validators have no side effects
+- **Closure-based state** - WASM module state encapsulated in closure (not mutable global)
+- **Type safety** - TypeScript strict mode with comprehensive type annotations
+- **Separated concerns** - Side effects (DOM manipulation) isolated from pure logic
+
+**State Management:**
+The WASM module uses a closure pattern to avoid mutable globals:
+```typescript
+// ❌ Avoid: Mutable global state
+let wasmModule: WasmModule | null = null;
+
+// ✅ Prefer: Closure-based immutable state
+const createWasmState = (): WasmState => {
+    let module: WasmModule | undefined;
+    return {
+        isReady: () => module !== undefined,
+        get: () => { /* ... */ },
+        initialise: (wasm) => { /* ... */ }
+    };
+};
+```
+
+**Build Process:**
+1. TypeScript (`.ts`) files compiled to JavaScript (`.js`) via `tsc`
+2. WASM module built via `wasm-pack` → `web/pkg/`
+3. HTML imports compiled JS modules directly
+
+## 🚀 Deployment
+
+The project automatically deploys to GitHub Pages via GitHub Actions when you push to the `main` branch.
+
+**To enable deployment on your fork:**
+1. Go to repository **Settings** → **Pages**
+2. Under **Source**, select **GitHub Actions**
+3. Push to `main` to trigger deployment
+
+The site will be available at `https://<username>.github.io/<repository-name>/`
 
 ## 🧪 Testing
 

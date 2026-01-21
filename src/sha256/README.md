@@ -37,7 +37,7 @@ For each block, perform 64 rounds using:
 - **Constants**: K[0..63] (first 32 bits of fractional parts of cube roots of first 64 primes)
 -
 
-**Working Variables**: a, b, c, d, e, f, g, h (initialized to current hash)
+**Working Variables**: a, b, c, d, e, f, g, h (initialised to current hash)
 
 **Round Function**:
 ```
